@@ -55,3 +55,26 @@ export const createAnswerForQuestion = async (
   );
   return res.data.data;
 };
+
+export const getSavedQuestions = async (token) => {
+  const res = await axiosInstance.get(QUESTION_API.GET_SAVED, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data.data || [];
+};
+
+export const saveQuestion = async (questionId, token) => {
+  const res = await axiosInstance.post(
+    QUESTION_API.SAVE(questionId),
+    {},
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+  return res.data.data;
+};
+
+export const unsaveQuestion = async (questionId, token) => {
+  const res = await axiosInstance.delete(QUESTION_API.SAVE(questionId), {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data.data;
+};

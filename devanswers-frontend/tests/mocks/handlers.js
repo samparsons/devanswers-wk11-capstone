@@ -42,6 +42,27 @@ export const handlers = [
     return HttpResponse.json({ data: mockQuestions });
   }),
 
+  // Bookmarks: must precede `/questions/:id` so "saved" isn't matched as an :id.
+  http.get(`${BASE_URL}/questions/saved`, () => {
+    return HttpResponse.json({ data: [mockQuestions[0]] });
+  }),
+
+  http.post(`${BASE_URL}/questions/:id/save`, ({ params }) => {
+    const question = mockQuestions.find((q) => q._id === params.id);
+    if (!question) {
+      return HttpResponse.json({ message: "Question not found" }, { status: 404 });
+    }
+    return HttpResponse.json({
+      data: { questionId: params.id, isSaved: true },
+    });
+  }),
+
+  http.delete(`${BASE_URL}/questions/:id/save`, ({ params }) => {
+    return HttpResponse.json({
+      data: { questionId: params.id, isSaved: false },
+    });
+  }),
+
   http.get(`${BASE_URL}/questions/:id`, ({ params }) => {
     const question = mockQuestions.find((q) => q._id === params.id);
 

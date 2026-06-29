@@ -11,6 +11,8 @@ describe('userSlice', () => {
     userInfo: null,
     login: { status: 'idle', error: null },
     registration: { status: 'idle', error: null },
+    savedQuestions: [],
+    savedQuestionIds: [],
   };
 
   beforeEach(() => {

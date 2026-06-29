@@ -1,6 +1,11 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 
 import { login, register } from '../services/authService.js';
+import {
+  getSavedQuestions,
+  saveQuestion as saveQuestionApi,
+  unsaveQuestion as unsaveQuestionApi,
+} from '../services/questionService.js';
 
 const initialState = {
   userInfo: JSON.parse(localStorage.getItem('userInfo')) || null,
@@ -12,6 +17,9 @@ const initialState = {
     status: 'idle', // 'idle' | 'pending' | 'fulfilled' | 'rejected'
     error: null,
   },
+  // Bookmarks: full list for the profile + ids for fast icon lookups everywhere.
+  savedQuestions: [],
+  savedQuestionIds: [],
 };
 
 // Async thunk: login — localStorage side effects kept out of reducers
@@ -55,6 +63,58 @@ export const logoutUser = () => (dispatch) => {
   dispatch(userSlice.actions.logout());
 };
 
+// Load the user's saved questions (for the profile list + icon state on app load).
+export const fetchSavedQuestions = createAsyncThunk(
+  'user/fetchSavedQuestions',
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().user.userInfo || {};
+      if (!token) return [];
+      return await getSavedQuestions(token);
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to fetch saved questions',
+      );
+    }
+  },
+);
+
+// Save a question. Optimistically flips the icon, reverts on failure.
+export const saveQuestion = createAsyncThunk(
+  'user/saveQuestion',
+  async (questionId, { getState, dispatch, rejectWithValue }) => {
+    const { token } = getState().user.userInfo || {};
+    dispatch(userSlice.actions.addSavedId(questionId));
+    try {
+      await saveQuestionApi(questionId, token);
+      return questionId;
+    } catch (error) {
+      dispatch(userSlice.actions.removeSavedId(questionId));
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to save question',
+      );
+    }
+  },
+);
+
+// Unsave a question. Optimistically removes it, reverts on failure.
+export const unsaveQuestion = createAsyncThunk(
+  'user/unsaveQuestion',
+  async (questionId, { getState, dispatch, rejectWithValue }) => {
+    const { token } = getState().user.userInfo || {};
+    dispatch(userSlice.actions.removeSavedId(questionId));
+    try {
+      await unsaveQuestionApi(questionId, token);
+      return questionId;
+    } catch (error) {
+      dispatch(userSlice.actions.addSavedId(questionId));
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to unsave question',
+      );
+    }
+  },
+);
+
 const userSlice = createSlice({
   name: 'user',
   initialState,
@@ -63,12 +123,28 @@ const userSlice = createSlice({
       state.userInfo = null;
       state.login = { status: 'idle', error: null };
       state.registration = { status: 'idle', error: null };
+      // Saved questions are per-user; clear them on logout.
+      state.savedQuestions = [];
+      state.savedQuestionIds = [];
     },
     clearAuthState: (state) => {
       state.login.error = null;
       state.login.status = 'idle';
       state.registration.error = null;
       state.registration.status = 'idle';
+    },
+    addSavedId: (state, action) => {
+      if (!state.savedQuestionIds.includes(action.payload)) {
+        state.savedQuestionIds.push(action.payload);
+      }
+    },
+    removeSavedId: (state, action) => {
+      state.savedQuestionIds = state.savedQuestionIds.filter(
+        (id) => id !== action.payload,
+      );
+      state.savedQuestions = state.savedQuestions.filter(
+        (q) => q._id !== action.payload,
+      );
     },
   },
   extraReducers: (builder) => {
@@ -99,12 +175,21 @@ const userSlice = createSlice({
       .addCase(registerUser.rejected, (state, action) => {
         state.registration.status = 'rejected';
         state.registration.error = action.payload || action.error.message;
+      })
+
+      // saved questions
+      .addCase(fetchSavedQuestions.fulfilled, (state, action) => {
+        state.savedQuestions = action.payload;
+        state.savedQuestionIds = action.payload.map((q) => q._id);
       });
   },
 });
 
-export const { clearAuthState, logout } = userSlice.actions;
+export const { clearAuthState, logout, addSavedId, removeSavedId } =
+  userSlice.actions;
 
 export const selectIsAuthenticated = (state) => !!state.user.userInfo;
+export const selectSavedQuestions = (state) => state.user.savedQuestions;
+export const selectSavedQuestionIds = (state) => state.user.savedQuestionIds;
 
 export default userSlice.reducer;

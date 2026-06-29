@@ -4,6 +4,7 @@ import { FaUser, FaClock } from 'react-icons/fa';
 import { voteQuestion } from '../../reducers/questionSlice';
 import { formatDate } from '../../utils/timeFormat';
 import VoteButtons from '../Shared/VoteButtons';
+import BookmarkButton from '../Shared/BookmarkButton';
 import './QuestionContent.css';
 
 const QuestionContent = ({ question }) => {
@@ -44,6 +45,11 @@ const QuestionContent = ({ question }) => {
                 upIconClassName="qcontent-icon-up"
                 downIconClassName="qcontent-icon-down"
                 itemType="question"
+              />
+              <BookmarkButton
+                questionId={question._id}
+                variant="outline-secondary"
+                className="mt-3 qcontent-bookmark-btn"
               />
             </Col>
             

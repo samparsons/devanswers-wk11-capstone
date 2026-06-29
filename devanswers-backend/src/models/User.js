@@ -21,7 +21,13 @@ const userSchema = new mongoose.Schema({
     isAdmin: {
         type: Boolean,
         default: false,
-    }
+    },
+    savedQuestions: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Question",
+        },
+    ],
 }, { timestamps: true });
 
 const User = mongoose.model("User", userSchema);
