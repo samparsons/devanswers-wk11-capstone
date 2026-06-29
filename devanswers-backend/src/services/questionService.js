@@ -17,6 +17,17 @@ const parseTagNames = (tags) => [
   ),
 ];
 
+// Attach an answerCount to each question and return plain objects, so any
+// list of questions renders with the same shape the feed UI expects.
+// Shared by the feed (getAllQuestionsService) and saved questions (bookmarkService).
+export const attachAnswerCounts = async (questions) =>
+  Promise.all(
+    questions.map(async (q) => {
+      const answerCount = await Answer.countDocuments({ questionId: q._id });
+      return { ...(q.toObject?.() ?? q), answerCount };
+    }),
+  );
+
 export const getAllQuestionsService = async () => {
   const questions = await Question.find({})
     .populate({ path: "author", select: "name" })
@@ -27,15 +38,7 @@ export const getAllQuestionsService = async () => {
     throw createAppError("No questions found", 404);
   }
 
-  // Attach answerCount to each question so the frontend can display and sort by it
-  const questionsWithCount = await Promise.all(
-    questions.map(async (q) => {
-      const answerCount = await Answer.countDocuments({ questionId: q._id });
-      return { ...(q.toObject?.() ?? q), answerCount };
-    }),
-  );
-
-  return questionsWithCount;
+  return attachAnswerCounts(questions);
 };
 
 export const getQuestionByIdService = async (id) => {

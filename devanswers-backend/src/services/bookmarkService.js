@@ -1,7 +1,7 @@
 import User from "../models/User.js";
 import Question from "../models/Question.js";
-import Answer from "../models/Answer.js";
 import { createAppError } from "../utils/createAppError.js";
+import { attachAnswerCounts } from "./questionService.js";
 
 // Save (bookmark) a question for a user. Idempotent via $addToSet.
 export const saveQuestionService = async (questionId, userId) => {
@@ -41,13 +41,9 @@ export const getSavedQuestionsService = async (userId) => {
     throw createAppError("User not found", 404);
   }
 
-  // Drop any nulls left by deleted questions, then attach answerCount.
+  // Drop any nulls left by deleted questions, then shape like the feed
+  // (author/tags already populated above) via the shared helper.
   const savedQuestions = (user.savedQuestions || []).filter(Boolean);
 
-  return Promise.all(
-    savedQuestions.map(async (q) => {
-      const answerCount = await Answer.countDocuments({ questionId: q._id });
-      return { ...(q.toObject?.() ?? q), answerCount };
-    }),
-  );
+  return attachAnswerCounts(savedQuestions);
 };
