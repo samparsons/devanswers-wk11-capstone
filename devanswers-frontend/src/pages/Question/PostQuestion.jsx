@@ -39,11 +39,19 @@ const PostQuestion = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!tags.trim()) {
+      alert('Please add at least one tag before posting your question.');
+      return;
+    }
+
     try {
       const result = await dispatch(postQuestion({ title, description, tags }));
       if (postQuestion.fulfilled.match(result)) {
         alert('Question posted successfully!');
         navigate(`/question/${result.payload._id}`);
+      } else {
+        alert(result.payload || 'Failed to post question. Please try again.');
       }
     } catch (error) {
       console.error('Error posting question:', error);

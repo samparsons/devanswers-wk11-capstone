@@ -300,17 +300,33 @@ describe('Questions API', () => {
     expect(updated.editedAt).toBeInstanceOf(Date);
   });
 
-  it('PUT /api/questions/:id -> should allow clearing all tags (empty tags is valid)', async () => {
+  it('PUT /api/questions/:id -> should reject clearing all tags with 400 (tags required)', async () => {
     const question = await createQuestion({ author: mockUser._id });
 
     const response = await request(app)
       .put(`/api/questions/${question._id}`)
       .set('Authorization', `Bearer ${jwtToken}`)
-      .send({ title: 'Still valid', description: 'Body', tags: '' });
+      .send({ title: 'Still valid', description: 'Body', tags: '   ' });
 
-    expect(response.status).toBe(200);
-    expect(response.body.success).toBe(true);
-    expect(response.body.data.tags).toEqual([]);
+    expect(response.status).toBe(400);
+    expect(response.body.success).toBe(false);
+    expect(response.body.message).toMatch(/at least one tag/i);
+
+    // Unchanged + still not marked edited
+    const unchanged = await Question.findById(question._id);
+    expect(unchanged.isEdited).toBe(false);
+  });
+
+  it('PUT /api/questions/:id -> should reject more than 5 tags with 400', async () => {
+    const question = await createQuestion({ author: mockUser._id });
+
+    const response = await request(app)
+      .put(`/api/questions/${question._id}`)
+      .set('Authorization', `Bearer ${jwtToken}`)
+      .send({ title: 'Valid', description: 'Body', tags: 'a,b,c,d,e,f' });
+
+    expect(response.status).toBe(400);
+    expect(response.body.message).toMatch(/maximum of 5 tags/i);
   });
 
   it('PUT /api/questions/:id -> should reject blank title/description with 400', async () => {
