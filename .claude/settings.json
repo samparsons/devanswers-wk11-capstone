@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(npm test)",
+      "Bash(npm run test:*)",
+      "Bash(npm run lint)",
+      "Bash(npm run build)",
+      "Bash(npm run dev:*)",
+      "Bash(npm run populate)",
+      "Bash(npm install)",
+      "Bash(npm ci)",
+      "Bash(npx vitest:*)",
+      "Bash(npx playwright:*)",
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git branch:*)",
+      "Bash(git checkout:*)",
+      "Bash(git switch:*)",
+      "Bash(git push:*)",
+      "Bash(gh pr:*)",
+      "Bash(gh repo view:*)"
+    ],
+    "deny": [
+      "Read(./devanswers-backend/.env)",
+      "Read(./**/.env)"
+    ]
+  }
+}

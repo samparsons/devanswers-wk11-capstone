@@ -1,0 +1,27 @@
+# Local-only working notes (linked from CLAUDE.md, kept out of version control).
+# Outward-facing docs go in docs_shared/ instead, which IS tracked.
+docs/
+
+# Dependencies
+node_modules/
+
+# Environment / secrets
+.env
+.env.local
+*.local
+
+# Claude Code: track .claude/settings.json + commands (graded artifacts),
+# but keep machine-local overrides out of version control.
+.claude/settings.local.json
+
+# Build output
+dist/
+build/
+
+# Playwright E2E artifacts
+test-results/
+playwright-report/
+
+# Logs & OS cruft
+*.log
+.DS_Store
