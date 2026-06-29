@@ -5,6 +5,18 @@ import Tag from "../models/Tag.js";
 import { handleVote } from "./voteService.js";
 import { getAI, extractJSON } from "../utils/geminiClient.js";
 
+// Parse a comma-separated tag string into unique, non-empty tag names.
+// Tags are optional, so an empty/blank string yields [] (no tags) rather than
+// attempting to create a Tag with an empty name (which fails schema validation).
+const parseTagNames = (tags) => [
+  ...new Set(
+    (tags || "")
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter(Boolean),
+  ),
+];
+
 export const getAllQuestionsService = async () => {
   const questions = await Question.find({})
     .populate({ path: "author", select: "name" })
@@ -58,10 +70,7 @@ export const createQuestionService = async ({
   tags,
   author,
 }) => {
-  const tagArray = tags
-    .trim()
-    .split(",")
-    .map((tag) => tag.trim());
+  const tagArray = parseTagNames(tags);
 
   const tagIds = await Promise.all(
     tagArray.map(async (tag) => {
@@ -111,10 +120,7 @@ export const updateQuestionService = async (
     throw createAppError("Title and description are required.", 400);
   }
 
-  const tagArray = tags
-    .trim()
-    .split(",")
-    .map((tag) => tag.trim());
+  const tagArray = parseTagNames(tags);
 
   const tagIds = await Promise.all(
     tagArray.map(async (tag) => {

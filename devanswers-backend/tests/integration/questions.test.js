@@ -300,6 +300,19 @@ describe('Questions API', () => {
     expect(updated.editedAt).toBeInstanceOf(Date);
   });
 
+  it('PUT /api/questions/:id -> should allow clearing all tags (empty tags is valid)', async () => {
+    const question = await createQuestion({ author: mockUser._id });
+
+    const response = await request(app)
+      .put(`/api/questions/${question._id}`)
+      .set('Authorization', `Bearer ${jwtToken}`)
+      .send({ title: 'Still valid', description: 'Body', tags: '' });
+
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+    expect(response.body.data.tags).toEqual([]);
+  });
+
   it('PUT /api/questions/:id -> should reject blank title/description with 400', async () => {
     const question = await createQuestion({ author: mockUser._id });
 
