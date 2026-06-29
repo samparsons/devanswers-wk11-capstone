@@ -41,6 +41,10 @@ const QuestionContent = ({ question }) => {
       setError('Title and description cannot be empty.');
       return;
     }
+    if (!form.tags.trim()) {
+      setError('At least one tag is required.');
+      return;
+    }
     try {
       await dispatch(
         editQuestion({

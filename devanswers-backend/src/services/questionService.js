@@ -5,6 +5,47 @@ import Tag from "../models/Tag.js";
 import { handleVote } from "./voteService.js";
 import { getAI, extractJSON } from "../utils/geminiClient.js";
 
+const MAX_TAGS_PER_QUESTION = 5;
+
+// Parse a comma-separated tag string into unique, normalized tag names.
+// A question must have between 1 and 5 tags (consistent app behavior since WK9);
+// blank/duplicate entries are dropped, and an empty result fails gracefully with a
+// 400 rather than crashing on a Tag with an empty `name`.
+const parseTagNames = (tags) => {
+  const tagsString = typeof tags === "string" ? tags : "";
+  const uniqueTags = [
+    ...new Set(
+      tagsString
+        .split(",")
+        .map((tag) => tag.trim().toLowerCase())
+        .filter(Boolean),
+    ),
+  ];
+
+  if (uniqueTags.length === 0) {
+    throw createAppError("At least one tag is required.", 400);
+  }
+  if (uniqueTags.length > MAX_TAGS_PER_QUESTION) {
+    throw createAppError(
+      `A maximum of ${MAX_TAGS_PER_QUESTION} tags is allowed.`,
+      400,
+    );
+  }
+
+  return uniqueTags;
+};
+
+// Attach an answerCount to each question and return plain objects, so any
+// list of questions renders with the same shape the feed UI expects.
+// Shared by the feed (getAllQuestionsService) and saved questions (bookmarkService).
+export const attachAnswerCounts = async (questions) =>
+  Promise.all(
+    questions.map(async (q) => {
+      const answerCount = await Answer.countDocuments({ questionId: q._id });
+      return { ...(q.toObject?.() ?? q), answerCount };
+    }),
+  );
+
 export const getAllQuestionsService = async () => {
   const questions = await Question.find({})
     .populate({ path: "author", select: "name" })
@@ -15,15 +56,7 @@ export const getAllQuestionsService = async () => {
     throw createAppError("No questions found", 404);
   }
 
-  // Attach answerCount to each question so the frontend can display and sort by it
-  const questionsWithCount = await Promise.all(
-    questions.map(async (q) => {
-      const answerCount = await Answer.countDocuments({ questionId: q._id });
-      return { ...(q.toObject?.() ?? q), answerCount };
-    }),
-  );
-
-  return questionsWithCount;
+  return attachAnswerCounts(questions);
 };
 
 export const getQuestionByIdService = async (id) => {
@@ -58,10 +91,7 @@ export const createQuestionService = async ({
   tags,
   author,
 }) => {
-  const tagArray = tags
-    .trim()
-    .split(",")
-    .map((tag) => tag.trim());
+  const tagArray = parseTagNames(tags);
 
   const tagIds = await Promise.all(
     tagArray.map(async (tag) => {
@@ -111,10 +141,7 @@ export const updateQuestionService = async (
     throw createAppError("Title and description are required.", 400);
   }
 
-  const tagArray = tags
-    .trim()
-    .split(",")
-    .map((tag) => tag.trim());
+  const tagArray = parseTagNames(tags);
 
   const tagIds = await Promise.all(
     tagArray.map(async (tag) => {

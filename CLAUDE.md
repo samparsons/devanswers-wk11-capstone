@@ -42,9 +42,24 @@ Frontend (`cd devanswers-frontend`):
   `POSTMAN_API_KEY` is in `devanswers-backend/.env` (never commit it).
 
 ## Conventions (quick reference; deep-dives in `docs/`)
-- Backend is ESM (`"type": "module"`). Keep the `routes → controllers → services → models`
-  layering — business logic in services, not controllers.
-- Frontend state via Redux Toolkit slices (`src/reducers/`); API calls via the Axios
-  service layer (`src/services/`, `src/api/axiosInstance.js`), never ad-hoc in components.
+
+**Backend** (ESM, `"type": "module"`) — respect the existing architecture:
+- Layering: `routes → controllers → services → models`. Business logic lives in **services**;
+  controllers stay thin (parse request, call a service, shape the response).
+- Response envelope: every controller returns `{ success, message, data }`
+  (e.g. `res.status(200).json({ success: true, message: "...", data })`).
+- Errors: throw via the shared helper `createAppError(message, statusCode)`
+  (`src/utils/createAppError.js`); the `errorHandler` middleware formats the response.
+  Don't hand-roll error responses in controllers/services.
+- Reuse before adding: shared shaping lives in helpers (e.g. `attachAnswerCounts`,
+  `parseTagNames` in `questionService.js`) — don't duplicate populate/count logic.
+
+**Frontend** — use the existing chain: **endpoint-config → service → Redux slice → component**:
+- Endpoints declared in `src/config/config.js`; HTTP calls go through `src/services/*` on
+  `src/api/axiosInstance.js` — never call `axios`/`fetch` ad-hoc in components.
+- State via Redux Toolkit slices (`src/reducers/`); components dispatch thunks, never call
+  services directly. Services return `res.data.data` (unwrap the envelope).
+
+**General**
 - Secrets in `.env` (see `devanswers-backend/.env.example`) — never commit them.
 - Match the style, naming, and test patterns of surrounding code.
