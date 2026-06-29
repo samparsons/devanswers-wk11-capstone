@@ -28,6 +28,10 @@ question page only. Edited posts display an **"edited"** indicator. Only the aut
 4. Editing a non-existent id returns **404**.
 5. Empty/whitespace-only title or description (question), or empty answerText (answer), returns
    **400** and does not persist.
+6. Tags are **required: 1–5 per question** (consistent with the app's behavior since WK9).
+   Clearing all tags, or supplying more than 5, returns **400** ("At least one tag is required." /
+   "A maximum of 5 tags is allowed.") on both create and edit — enforced server-side and guarded
+   in the UI. Tag names are normalized (trimmed, lowercased, de-duplicated).
 6. A freshly created question/answer has `isEdited === false` and no "edited" indicator.
 7. After an edit, the detail page shows the updated content immediately and an "edited" indicator.
 8. The pencil affordance renders only when `post.author._id === userInfo.userId`; it is absent
