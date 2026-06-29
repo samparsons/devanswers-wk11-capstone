@@ -28,7 +28,15 @@ const answerSchema = new mongoose.Schema({
     voteCount: {
         type: Number,
         default: 0,
-    }
+    },
+    isEdited: {
+        type: Boolean,
+        default: false,
+    },
+    editedAt: {
+        type: Date,
+        default: null,
+    },
 }, { timestamps: true });
 
 const Answer = mongoose.model("Answer", answerSchema);

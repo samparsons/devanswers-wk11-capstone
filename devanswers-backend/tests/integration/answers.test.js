@@ -222,6 +222,40 @@ describe("Answers API", () => {
     expect(updatedAnswer.answerText).toBe(updateData.answerText);
   });
 
+  it("PUT /api/answers/:answerId -> should mark the answer edited (isEdited + editedAt)", async () => {
+    const answer = await createAnswer({ author: mockUser._id });
+    expect(answer.isEdited).toBe(false);
+    expect(answer.editedAt).toBeNull();
+
+    const response = await request(app)
+      .put(`/api/answers/${answer._id}`)
+      .set("Authorization", `Bearer ${jwtToken}`)
+      .send({ answerText: "Edited answer text" });
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.isEdited).toBe(true);
+    expect(response.body.data.editedAt).not.toBeNull();
+
+    const updated = await Answer.findById(answer._id);
+    expect(updated.isEdited).toBe(true);
+    expect(updated.editedAt).toBeInstanceOf(Date);
+  });
+
+  it("PUT /api/answers/:answerId -> should reject blank answer text with 400", async () => {
+    const answer = await createAnswer({ author: mockUser._id });
+
+    const response = await request(app)
+      .put(`/api/answers/${answer._id}`)
+      .set("Authorization", `Bearer ${jwtToken}`)
+      .send({ answerText: "   " });
+
+    expect(response.status).toBe(400);
+    expect(response.body.success).toBe(false);
+
+    const unchanged = await Answer.findById(answer._id);
+    expect(unchanged.isEdited).toBe(false);
+  });
+
   it("PUT /api/answers/:answerId -> should return 404 for non-existent answer ID", async () => {
     const fakeId = new mongoose.Types.ObjectId();
 

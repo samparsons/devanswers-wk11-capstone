@@ -346,9 +346,12 @@ describe("questionService", () => {
       }));
 
       Question.findById = vi.fn().mockResolvedValue(mockExistingQuestion);
-      Question.findByIdAndUpdate = vi
-        .fn()
-        .mockResolvedValue(mockUpdatedQuestion);
+      // updateQuestionService now populates author + tags on the returned doc.
+      Question.findByIdAndUpdate = vi.fn().mockReturnValue({
+        populate: vi.fn().mockReturnValue({
+          populate: vi.fn().mockResolvedValue(mockUpdatedQuestion),
+        }),
+      });
 
       // Act
       const result = await updateQuestionService(

@@ -6,12 +6,12 @@ import { configureStore } from '@reduxjs/toolkit';
 import AnswerList from '../../../src/components/Answer/AnswerList';
 import questionReducer from '../../../src/reducers/questionSlice';
 
-const createMockStore = () => {
+const createMockStore = (userInfo = { userId: 'user-1' }) => {
   return configureStore({
     reducer: {
       question: questionReducer,
       user: () => ({
-        userInfo: { userId: 'user-1' },
+        userInfo,
         loading: false,
         error: null,
       }),
@@ -36,8 +36,8 @@ const mockAnswers = [
   },
 ];
 
-const renderAnswerList = (answers = mockAnswers) => {
-  const store = createMockStore();
+const renderAnswerList = (answers = mockAnswers, userInfo) => {
+  const store = createMockStore(userInfo);
   return render(
     <Provider store={store}>
       <AnswerList answers={answers} />
@@ -95,5 +95,26 @@ describe('AnswerList Component', () => {
   it('shows "0 Answers" heading when answers array is empty', () => {
     renderAnswerList([]);
     expect(screen.getByText('0 Answers')).toBeInTheDocument();
+  });
+
+  it('shows the edit affordance only on the current user\'s own answer', () => {
+    // a1 -> user-2, a2 -> user-3; viewing as user-2 reveals exactly one pencil
+    renderAnswerList(mockAnswers, { userId: 'user-2' });
+    const editButtons = screen.getAllByRole('button', { name: /edit answer/i });
+    expect(editButtons).toHaveLength(1);
+  });
+
+  it('hides the edit affordance when the user authored none of the answers', () => {
+    renderAnswerList(mockAnswers, { userId: 'user-1' });
+    expect(
+      screen.queryByRole('button', { name: /edit answer/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows an "edited" indicator on an edited answer', () => {
+    renderAnswerList([
+      { ...mockAnswers[0], isEdited: true, editedAt: '2026-01-16T00:00:00.000Z' },
+    ]);
+    expect(screen.getByText(/edited/i)).toBeInTheDocument();
   });
 });

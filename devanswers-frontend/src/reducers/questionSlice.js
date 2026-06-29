@@ -6,8 +6,13 @@ import {
   upvoteQuestion,
   downvoteQuestion,
   createAnswerForQuestion,
+  updateQuestion,
 } from "../services/questionService.js";
-import { upvoteAnswer, downvoteAnswer } from "../services/answerService.js";
+import {
+  upvoteAnswer,
+  downvoteAnswer,
+  updateAnswer,
+} from "../services/answerService.js";
 
 const initialState = {
   questions: [],
@@ -122,6 +127,41 @@ export const postAnswer = createAsyncThunk(
   },
 );
 
+export const editQuestion = createAsyncThunk(
+  "question/editQuestion",
+  async (
+    { questionId, title, description, tags },
+    { getState, rejectWithValue },
+  ) => {
+    try {
+      const { token } = getState().user.userInfo || {};
+      return await updateQuestion(questionId, { title, description, tags }, token);
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to edit question",
+      );
+    }
+  },
+);
+
+export const editAnswer = createAsyncThunk(
+  "question/editAnswer",
+  async ({ answerId, answerText }, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().user.userInfo || {};
+      return await updateAnswer(answerId, answerText, token);
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to edit answer",
+      );
+    }
+  },
+);
+
 const questionSlice = createSlice({
   name: "question",
   initialState,
@@ -217,6 +257,44 @@ const questionSlice = createSlice({
       })
       .addCase(postAnswer.rejected, (state, action) => {
         state.loading = false;
+        state.error = action.payload || action.error.message;
+      })
+
+      // edit question (in place; the update response omits answers, so the
+      // spread preserves currentQuestion.answers)
+      .addCase(editQuestion.fulfilled, (state, action) => {
+        if (
+          state.currentQuestion &&
+          state.currentQuestion._id === action.payload._id
+        ) {
+          state.currentQuestion = { ...state.currentQuestion, ...action.payload };
+        }
+        const idx = state.questions.findIndex(
+          (q) => q._id === action.payload._id,
+        );
+        if (idx !== -1) {
+          state.questions[idx] = { ...state.questions[idx], ...action.payload };
+        }
+      })
+      .addCase(editQuestion.rejected, (state, action) => {
+        state.error = action.payload || action.error.message;
+      })
+
+      // edit answer (replace the matching answer in currentQuestion in place)
+      .addCase(editAnswer.fulfilled, (state, action) => {
+        if (state.currentQuestion?.answers) {
+          const idx = state.currentQuestion.answers.findIndex(
+            (a) => a._id === action.payload._id,
+          );
+          if (idx !== -1) {
+            state.currentQuestion.answers[idx] = {
+              ...state.currentQuestion.answers[idx],
+              ...action.payload,
+            };
+          }
+        }
+      })
+      .addCase(editAnswer.rejected, (state, action) => {
         state.error = action.payload || action.error.message;
       });
   },

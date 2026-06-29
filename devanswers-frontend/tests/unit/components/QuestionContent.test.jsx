@@ -6,12 +6,13 @@ import { configureStore } from '@reduxjs/toolkit';
 import QuestionContent from '../../../src/components/Question/QuestionContent';
 import questionReducer from '../../../src/reducers/questionSlice';
 
-const createMockStore = () => {
+const createMockStore = (userInfo = { userId: 'user-1' }) => {
   return configureStore({
     reducer: {
       question: questionReducer,
       user: () => ({
-        userInfo: { userId: 'user-1' },
+        userInfo,
+        savedQuestionIds: [],
         loading: false,
         error: null,
       }),
@@ -32,8 +33,8 @@ const mockQuestion = {
   createdAt: '2026-01-15T00:00:00.000Z',
 };
 
-const renderQuestionContent = (question = mockQuestion) => {
-  const store = createMockStore();
+const renderQuestionContent = (question = mockQuestion, userInfo) => {
+  const store = createMockStore(userInfo);
   return render(
     <Provider store={store}>
       <QuestionContent question={question} />
@@ -82,5 +83,33 @@ describe('QuestionContent Component', () => {
   it('renders "Posted by" label for the author', () => {
     renderQuestionContent();
     expect(screen.getByText(/Posted by/i)).toBeInTheDocument();
+  });
+
+  it('shows the edit affordance only to the author', () => {
+    // author is user-2; viewing as user-2 should reveal the pencil
+    renderQuestionContent(mockQuestion, { userId: 'user-2' });
+    expect(
+      screen.getByRole('button', { name: /edit question/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('hides the edit affordance from non-authors', () => {
+    renderQuestionContent(mockQuestion, { userId: 'user-1' });
+    expect(
+      screen.queryByRole('button', { name: /edit question/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows an "edited" indicator only when the question was edited', () => {
+    const { unmount } = renderQuestionContent(mockQuestion);
+    expect(screen.queryByText(/edited/i)).not.toBeInTheDocument();
+    unmount();
+
+    renderQuestionContent({
+      ...mockQuestion,
+      isEdited: true,
+      editedAt: '2026-01-16T00:00:00.000Z',
+    });
+    expect(screen.getByText(/edited/i)).toBeInTheDocument();
   });
 });
