@@ -46,7 +46,14 @@ export const updateAnswerService = async (answerId, answerText, loggedInUser) =>
     throw createAppError('Not authorized to update this answer', 403);
   }
 
+  // Reject blank/invalid content before persisting.
+  if (!answerText?.trim()) {
+    throw createAppError('Answer text is required.', 400);
+  }
+
   answer.answerText = answerText;
+  answer.isEdited = true;
+  answer.editedAt = new Date();
   await answer.save();
 
   return Answer.findById(answerId).populate('author', 'name');

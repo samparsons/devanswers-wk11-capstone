@@ -17,9 +17,13 @@ const app = express();
 // Security middlewares
 app.use(helmet());
 
+// A single SPA page load fans out into many API calls (questions, stats, saved
+// questions, etc.), so a hard 100/15min trips during normal browsing and testing.
+// Keep a strict cap in production, but relax it in development/test.
+const isProduction = process.env.NODE_ENV === 'production';
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    limit: 100, // limit each IP to 100 requests per windowMs
+    limit: isProduction ? 100 : 10000, // requests per IP per window
     standardHeaders: 'draft-8', // RFC 6585 combined RateLimit header (v8.x API)
     legacyHeaders: false,
 });

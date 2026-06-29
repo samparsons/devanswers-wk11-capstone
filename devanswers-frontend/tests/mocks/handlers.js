@@ -94,6 +94,29 @@ export const handlers = [
     return HttpResponse.json({ data: newQuestion }, { status: 201 });
   }),
 
+  http.put(`${BASE_URL}/questions/:id`, async ({ request, params }) => {
+    const body = await request.json();
+    const question = mockQuestions.find((q) => q._id === params.id);
+    if (!question) {
+      return HttpResponse.json({ message: "Question not found" }, { status: 404 });
+    }
+    if (!body.title?.trim() || !body.description?.trim()) {
+      return HttpResponse.json(
+        { message: "Title and description are required." },
+        { status: 400 },
+      );
+    }
+    return HttpResponse.json({
+      data: {
+        ...question,
+        title: body.title,
+        description: body.description,
+        isEdited: true,
+        editedAt: new Date().toISOString(),
+      },
+    });
+  }),
+
   http.post(`${BASE_URL}/questions/:id/upvote`, ({ params }) => {
     const question = mockQuestions.find((q) => q._id === params.id);
 
@@ -143,6 +166,28 @@ export const handlers = [
       return HttpResponse.json({ data: newAnswer }, { status: 201 });
     },
   ),
+
+  http.put(`${BASE_URL}/answers/:answerId`, async ({ request, params }) => {
+    const body = await request.json();
+    const answer = mockAnswers.find((a) => a._id === params.answerId);
+    if (!answer) {
+      return HttpResponse.json({ message: "Answer not found" }, { status: 404 });
+    }
+    if (!body.answerText?.trim()) {
+      return HttpResponse.json(
+        { message: "Answer text is required." },
+        { status: 400 },
+      );
+    }
+    return HttpResponse.json({
+      data: {
+        ...answer,
+        answerText: body.answerText,
+        isEdited: true,
+        editedAt: new Date().toISOString(),
+      },
+    });
+  }),
 
   http.post(`${BASE_URL}/answers/:id/upvote`, ({ params }) => {
     const answer = mockAnswers.find((a) => a._id === params.id);

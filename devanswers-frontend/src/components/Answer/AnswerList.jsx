@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Card, Row, Col, Button } from 'react-bootstrap';
+import { Card, Row, Col, Button, Form } from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
-import { FaUser, FaClock } from 'react-icons/fa';
-import { voteAnswer } from '../../reducers/questionSlice';
-import { formatDate } from '../../utils/timeFormat';
+import { FaUser, FaClock, FaPencilAlt } from 'react-icons/fa';
+import { voteAnswer, editAnswer } from '../../reducers/questionSlice';
+import { formatDate, getRelativeTime } from '../../utils/timeFormat';
 import VoteButtons from '../Shared/VoteButtons';
 import { summarizeAnswers } from '../../services/aiService';
 import './AnswerList.css';
@@ -15,6 +15,35 @@ const AnswerList = ({ answers, question }) => {
   const [summary, setSummary] = useState(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryVisible, setSummaryVisible] = useState(false);
+
+  // Inline answer editing: only one answer is edited at a time.
+  const [editingId, setEditingId] = useState(null);
+  const [editText, setEditText] = useState('');
+  const [editError, setEditError] = useState('');
+
+  const startEditing = (answer) => {
+    setEditingId(answer._id);
+    setEditText(answer.answerText);
+    setEditError('');
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditError('');
+  };
+
+  const handleSaveEdit = async (answerId) => {
+    if (!editText.trim()) {
+      setEditError('Answer cannot be empty.');
+      return;
+    }
+    try {
+      await dispatch(editAnswer({ answerId, answerText: editText.trim() })).unwrap();
+      setEditingId(null);
+    } catch (err) {
+      setEditError(typeof err === 'string' ? err : 'Failed to save changes.');
+    }
+  };
 
   const handleSummarize = async () => {
     setSummaryLoading(true);
@@ -93,21 +122,75 @@ const AnswerList = ({ answers, question }) => {
 
                   {/* Answer Content */}
                   <Col>
-                    <div className="mb-2 alist-content">
-                      {answer.answerText}
-                    </div>
-                    <div className="mt-2 d-flex align-items-center gap-2 alist-meta">
-                      <FaUser className="alist-icon-sm" />
-                      <span>Answered by </span>
-                      <strong className="alist-author">{answer.author?.name}</strong>
-                      {answer.createdAt && (
-                        <>
-                          <span className="mx-2">•</span>
-                          <FaClock className="alist-icon-sm" />
-                          <span>{formatDate(answer.createdAt)}</span>
-                        </>
-                      )}
-                    </div>
+                    {editingId === answer._id ? (
+                      <Form
+                        className="alist-edit-form"
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          handleSaveEdit(answer._id);
+                        }}
+                      >
+                        {editError && (
+                          <div className="text-danger mb-2">{editError}</div>
+                        )}
+                        <Form.Control
+                          as="textarea"
+                          rows={4}
+                          value={editText}
+                          onChange={(e) => setEditText(e.target.value)}
+                          className="mb-2"
+                        />
+                        <div className="d-flex gap-2">
+                          <Button type="submit" size="sm" variant="primary">
+                            Save
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline-secondary"
+                            onClick={cancelEditing}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </Form>
+                    ) : (
+                      <>
+                        <div className="mb-2 alist-content">
+                          {answer.answerText}
+                        </div>
+                        <div className="mt-2 d-flex align-items-center gap-2 alist-meta">
+                          <FaUser className="alist-icon-sm" />
+                          <span>Answered by </span>
+                          <strong className="alist-author">{answer.author?.name}</strong>
+                          {answer.createdAt && (
+                            <>
+                              <span className="mx-2">•</span>
+                              <FaClock className="alist-icon-sm" />
+                              <span>{formatDate(answer.createdAt)}</span>
+                            </>
+                          )}
+                          {answer.isEdited && (
+                            <span className="alist-edited-indicator">
+                              <span className="mx-2">•</span>
+                              edited {getRelativeTime(answer.editedAt)}
+                            </span>
+                          )}
+                          {!!userInfo && answer.author?._id === userInfo.userId && (
+                            <Button
+                              variant="link"
+                              size="sm"
+                              className="p-0 ms-2 alist-edit-btn"
+                              onClick={() => startEditing(answer)}
+                              aria-label="Edit answer"
+                              title="Edit answer"
+                            >
+                              <FaPencilAlt />
+                            </Button>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </Col>
                 </Row>
               </Card.Body>

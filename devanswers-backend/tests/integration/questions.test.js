@@ -281,6 +281,41 @@ describe('Questions API', () => {
     expect(updatedQuestion.title).toBe(updateData.title);
   });
 
+  it('PUT /api/questions/:id -> should mark the question edited (isEdited + editedAt)', async () => {
+    const question = await createQuestion({ author: mockUser._id });
+    expect(question.isEdited).toBe(false);
+    expect(question.editedAt).toBeNull();
+
+    const response = await request(app)
+      .put(`/api/questions/${question._id}`)
+      .set('Authorization', `Bearer ${jwtToken}`)
+      .send({ title: 'Edited', description: 'Edited body', tags: 'a, b' });
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.isEdited).toBe(true);
+    expect(response.body.data.editedAt).not.toBeNull();
+
+    const updated = await Question.findById(question._id);
+    expect(updated.isEdited).toBe(true);
+    expect(updated.editedAt).toBeInstanceOf(Date);
+  });
+
+  it('PUT /api/questions/:id -> should reject blank title/description with 400', async () => {
+    const question = await createQuestion({ author: mockUser._id });
+
+    const response = await request(app)
+      .put(`/api/questions/${question._id}`)
+      .set('Authorization', `Bearer ${jwtToken}`)
+      .send({ title: '   ', description: '', tags: 'a' });
+
+    expect(response.status).toBe(400);
+    expect(response.body.success).toBe(false);
+
+    // Unchanged + still not marked edited
+    const unchanged = await Question.findById(question._id);
+    expect(unchanged.isEdited).toBe(false);
+  });
+
   it('PUT /api/questions/:id -> should return 404 for non-existent question ID', async () => {
     const fakeId = new mongoose.Types.ObjectId();
 
