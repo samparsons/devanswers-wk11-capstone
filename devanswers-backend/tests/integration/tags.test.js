@@ -35,7 +35,10 @@ async function createQuestion(overrides = {}) {
     author: testUser._id,
   };
   const question = new Question({ ...defaultData, ...overrides });
-  await question.save();
+  // When a test sets createdAt explicitly (e.g. to assert ordering), save with
+  // timestamps disabled so Mongoose doesn't overwrite it with Date.now(). Without
+  // this, questions created in the same millisecond sort nondeterministically.
+  await question.save(overrides.createdAt ? { timestamps: false } : undefined);
   return question;
 }
 
@@ -160,9 +163,21 @@ describe('Tags API', () => {
   it('GET /api/tags/:tagId/questions -> should return questions sorted by createdAt descending', async () => {
     // Arrange
     const tag = await createTag('sorting');
-    await createQuestion({ tags: [tag._id], title: 'First' });
-    await createQuestion({ tags: [tag._id], title: 'Second' });
-    await createQuestion({ tags: [tag._id], title: 'Third' });
+    await createQuestion({
+      tags: [tag._id],
+      title: 'First',
+      createdAt: new Date('2026-01-01T00:00:00Z'),
+    });
+    await createQuestion({
+      tags: [tag._id],
+      title: 'Second',
+      createdAt: new Date('2026-01-02T00:00:00Z'),
+    });
+    await createQuestion({
+      tags: [tag._id],
+      title: 'Third',
+      createdAt: new Date('2026-01-03T00:00:00Z'),
+    });
 
     // Act
     const response = await request(app).get(`/api/tags/${tag._id}/questions`);

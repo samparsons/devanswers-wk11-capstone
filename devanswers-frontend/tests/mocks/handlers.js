@@ -106,7 +106,7 @@ export const handlers = [
   // ── Answer endpoints ──────────────────────────────────────────────────────
   http.post(
     `${BASE_URL}/questions/:questionId/answers`,
-    async ({ request, params }) => {
+    async ({ request }) => {
       const body = await request.json();
 
       const newAnswer = {
@@ -166,7 +166,7 @@ export const handlers = [
   }),
 
   // ── User stats endpoint ───────────────────────────────────────────────────
-  http.get(`${BASE_URL}/auth/stats/:userId`, ({ params }) => {
+  http.get(`${BASE_URL}/auth/stats/:userId`, () => {
     return HttpResponse.json({
       success: true,
       data: {
