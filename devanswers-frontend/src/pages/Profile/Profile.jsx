@@ -1,15 +1,22 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Container, Row, Col, Card, Form, Button, Alert, Spinner } from 'react-bootstrap';
-import { useSelector } from 'react-redux';
-import { FaUser, FaEnvelope, FaSave, FaEdit } from 'react-icons/fa';
+import { useSelector, useDispatch } from 'react-redux';
+import { FaUser, FaEnvelope, FaSave, FaEdit, FaRegBookmark } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { USER_API } from '../../config/config.js';
+import {
+  fetchSavedQuestions,
+  selectSavedQuestions,
+} from '../../reducers/userSlice.js';
+import QuestionList from '../../components/Question/QuestionList.jsx';
 import './Profile.css';
 
 const Profile = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { userInfo } = useSelector((state) => state.user);
+  const savedQuestions = useSelector(selectSavedQuestions);
   const isAuthenticated = !!userInfo;
   
   const [isEditing, setIsEditing] = useState(false);
@@ -48,8 +55,9 @@ const Profile = () => {
       navigate('/login');
     } else if (userInfo?.userId) {
       fetchUserStats();
+      dispatch(fetchSavedQuestions());
     }
-  }, [isAuthenticated, navigate, userInfo, fetchUserStats]);
+  }, [isAuthenticated, navigate, userInfo, dispatch, fetchUserStats]);
 
   const handleChange = (e) => {
     setFormData({
@@ -302,6 +310,24 @@ const Profile = () => {
                       Your reputation reflects your contribution to the community!
                     </small>
                   </Alert>
+                </div>
+              )}
+
+              {/* Saved Questions Section */}
+              {!isEditing && (
+                <div className="mt-4 pt-4 profile-section-divider">
+                  <h5 className="mb-3 profile-stats-title">Saved Questions</h5>
+                  {savedQuestions && savedQuestions.length > 0 ? (
+                    <QuestionList questions={savedQuestions} />
+                  ) : (
+                    <div className="text-center text-muted py-4">
+                      <FaRegBookmark size={28} className="mb-2" />
+                      <p className="mb-0">No saved questions yet</p>
+                      <small>
+                        Bookmark questions from the feed to revisit them here.
+                      </small>
+                    </div>
+                  )}
                 </div>
               )}
             </Card.Body>
