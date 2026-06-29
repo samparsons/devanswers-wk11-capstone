@@ -121,7 +121,7 @@ const QuestionContent = ({ question }) => {
               {isEditing ? (
                 <Form onSubmit={handleSave} className="qcontent-edit-form">
                   {error && <div className="text-danger mb-2">{error}</div>}
-                  <Form.Group className="mb-3">
+                  <Form.Group className="mb-3" controlId="qedit-title">
                     <Form.Label>Title</Form.Label>
                     <Form.Control
                       type="text"
@@ -130,7 +130,7 @@ const QuestionContent = ({ question }) => {
                       onChange={handleChange}
                     />
                   </Form.Group>
-                  <Form.Group className="mb-3">
+                  <Form.Group className="mb-3" controlId="qedit-description">
                     <Form.Label>Description</Form.Label>
                     <Form.Control
                       as="textarea"
@@ -140,7 +140,7 @@ const QuestionContent = ({ question }) => {
                       onChange={handleChange}
                     />
                   </Form.Group>
-                  <Form.Group className="mb-3">
+                  <Form.Group className="mb-3" controlId="qedit-tags">
                     <Form.Label>Tags (comma-separated)</Form.Label>
                     <Form.Control
                       type="text"
